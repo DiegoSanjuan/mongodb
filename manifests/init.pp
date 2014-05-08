@@ -51,12 +51,14 @@ class mongodb(
   package { $mongodb::params::mongo_10gen :
     ensure  => "${mongodb_version}",
     require => Class['mongodb::10gen'],
+    install_options => [ '--obsoletes' ],
   }
   
   if $mongodb::params::mongo_10gen_server {
     package { $mongodb::params::mongo_10gen_server :
       ensure  => "${mongodb_version}",
       require => Class['mongodb::10gen'],
+      install_options => [ '--obsoletes' ],
     }
   }
 
