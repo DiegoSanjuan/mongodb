@@ -13,12 +13,9 @@ class mongodb(
   $replica_set = undef,
   $key_file    = undef,
 ) {
-  
   include 'mongodb::params'
   include 'mongodb::10gen'
-  
   Class['mongodb'] -> Class['mongodb::config']
-
   $config_hash = {
     'port'        => "${port}",
     'db_path'     => "${db_path}",
@@ -30,53 +27,46 @@ class mongodb(
     'replica_set' => "${replica_set}",
     'key_file'    => "${key_file}",
   }
-  
   $config_class = { 'mongodb::config' => $config_hash }
-
   create_resources( 'class', $config_class )
-
-  if $version == '2.6.1' {
-    case $::operatingsystem {
+  case $::operatingsystem {
       /(Amazon|CentOS|Fedora|RedHat)/: {
-        $mongodb_version = "mongodb-org-server-2.6.1-1"
-        $mongodb_version_server = undef
+        exec { 'yum mongodb' :
+          command   => "yum install -y ${mongodb::params::mongo_10gen}",
+          path      => "/usr/bin:/usr/sbin:/bin:/sbin",
+          logoutput => true,
+          require => Class['mongodb::10gen'],
+        }
+        if $mongodb::params::mongo_10gen_server {
+          exec { 'yum mongodb' :
+            command   => "yum install -y ${mongodb::params::mongo_10gen_server}",
+            path      => "/usr/bin:/usr/sbin:/bin:/sbin",
+            logoutput => true,
+            require => Class['mongodb::10gen'],
+          }
+        }
       }
       /(Debian|Ubuntu)/: {
-        $mongodb_version = "mongodb-org-server_2.6.1"
-        $mongodb_version_server = undef
+        exec { 'apt-get mongodb' :
+          command   => "apt-get install -y ${mongodb::params::mongo_10gen} restart",
+          path      => "/usr/bin:/usr/sbin:/bin:/sbin",
+          logoutput => true,
+          require => Class['mongodb::10gen'],
+        }
+        if $mongodb::params::mongo_10gen_server {
+          exec { 'yum mongodb' :
+            command   => "apt-get install -y ${mongodb::params::mongo_10gen_server}",
+            path      => "/usr/bin:/usr/sbin:/bin:/sbin",
+            logoutput => true,
+            require => Class['mongodb::10gen'],
+          }
+        }
       }
-    }  
-  } else {
-      if $version == '2.4.10' {
-        case $::operatingsystem {
-          /(Amazon|CentOS|Fedora|RedHat)/: {
-            $mongodb_version = "mongo-10gen-mongodb_1"
-            $mongodb_version_server = "mongo-10gen-2.4.10-mongodb_1"
-          }
-          /(Debian|Ubuntu)/: {
-            $mongodb_version = "mongodb-10gen_2.4.10"
-            $mongodb_version_server = undef
-          }
-        }  
-  } else {
-    $mongodb_version = latest
-    }
   }
-
-  package { $mongodb_version :
-    require => Class['mongodb::10gen']
-  }
-  
-  if $mongodb_version_server {
-    package { $mongodb_version_server :
-      require => Class['mongodb::10gen']
-    }
-  }
-
   service { 'mongodb' :
     ensure     => running,
     name       => $mongodb::params::mongo_service,
     enable     => true,
-    require    => Package[$mongodb_version]
+    require    => Package[$mongodb::params::mongo_10gen],
   }
 }

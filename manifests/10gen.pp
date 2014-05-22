@@ -11,7 +11,7 @@ class mongodb::10gen {
       descr          => '10gen Repository',
       notify         => Exec['yum-check-update-mongo'],
     }
-   
+
     # Puppet bug with yum provider, need to execute a command at the end to return 0
     exec { 'yum-check-update-mongo':
       command     => 'yum check-update;echo $?',
@@ -22,11 +22,11 @@ class mongodb::10gen {
     }
   } elsif ($osfamily == 'Debian') {
     case $::operatingsystem {
-      'Debian': { 
-        $source = 'deb http://downloads-distro.mongodb.org/repo/debian-sysvinit dist 10gen' 
+      'Debian': {
+        $source = 'deb http://downloads-distro.mongodb.org/repo/debian-sysvinit dist 10gen'
       }
-      'Ubuntu': { 
-        $source = 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' 
+      'Ubuntu': {
+        $source = 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen'
       }
     }
 
@@ -36,7 +36,7 @@ class mongodb::10gen {
       logoutput => true,
       unless    => 'apt-key list | grep 10gen',
     }
-    
+
     exec { 'apt-source-mongo':
       command   => "echo \"${source}\" > /etc/apt/sources.list.d/10gen.list",
       path      => '/bin:/usr/bin:/usr/local/bin',
@@ -44,7 +44,7 @@ class mongodb::10gen {
       unless    => 'cat /etc/apt/sources.list | grep 10gen',
       require   => Exec['apt-key-mongo'],
     }
-    
+
     exec { 'apt-update-mongo':
       command   => 'apt-get update',
       path      => '/bin:/usr/bin:/usr/local/bin',
