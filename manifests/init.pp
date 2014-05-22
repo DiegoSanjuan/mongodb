@@ -35,31 +35,41 @@ class mongodb(
 
   create_resources( 'class', $config_class )
 
-  if $version != 'latest' {
+  if $version == '2.6.1' {
     case $::operatingsystem {
-      /(Amazon)/: {
-        $mongodb_version = "${version}-1"
-      }
-      /(CentOS|Fedora|RedHat)/: {
-        $mongodb_version = "${version}-mongodb_1"
+      /(Amazon|CentOS|Fedora|RedHat)/: {
+        $mongodb_version = "mongodb-org-server-2.6.1-1"
+        $mongodb_version_server = undef
       }
       /(Debian|Ubuntu)/: {
-        $mongodb_version = "${version}"
+        $mongodb_version = "mongodb-org-server_2.6.1"
+        $mongodb_version_server = undef
       }
     }  
   } else {
+      if $version == '2.4.10' {
+        case $::operatingsystem {
+          /(Amazon|CentOS|Fedora|RedHat)/: {
+            $mongodb_version = "mongo-10gen-mongodb_1"
+            $mongodb_version_server = "mongo-10gen-2.4.10-mongodb_1"
+          }
+          /(Debian|Ubuntu)/: {
+            $mongodb_version = "mongodb-10gen_2.4.10"
+            $mongodb_version_server = undef
+          }
+        }  
+  } else {
     $mongodb_version = latest
+    }
   }
 
-  package { $mongodb::params::mongo_10gen :
-    ensure  => "${mongodb_version}",
-    require => Class['mongodb::10gen'],
+  package { $mongodb_version :
+    require => Class['mongodb::10gen']
   }
   
-  if $mongodb::params::mongo_10gen_server {
-    package { $mongodb::params::mongo_10gen_server :
-      ensure  => "${mongodb_version}",
-      require => Class['mongodb::10gen'],
+  if $mongodb_version_server {
+    package { $mongodb_version_server :
+      require => Class['mongodb::10gen']
     }
   }
 
@@ -67,6 +77,6 @@ class mongodb(
     ensure     => running,
     name       => $mongodb::params::mongo_service,
     enable     => true,
-    require    => Package[$mongodb::params::mongo_10gen],
+    require    => Package[$mongodb_version]
   }
 }
