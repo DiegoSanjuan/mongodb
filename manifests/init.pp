@@ -4,8 +4,8 @@
 class mongodb(
   $port        = 27017,
   $version     = latest,
-  $db_path     = 'default',
-  $log_path    = 'default',
+  $db_path     = 'data',
+  $log_path    = 'logs',
   $auth        = true,
   $bind_ip     = undef,
   $username    = undef,
@@ -25,7 +25,7 @@ class mongodb(
     'username'    => "${username}",
     'password'    => "${password}",
     'replica_set' => "${replica_set}",
-    'key_file'    => "${key_file}",
+    'key_file'    => "${key_file}"
   }
   $config_class = { 'mongodb::config' => $config_hash }
   create_resources( 'class', $config_class )
