@@ -16,14 +16,18 @@ define mongodb::admin(
     logoutput => true,
     timeout   => 300,
   }
-  
-  $noauth = "mongo admin --eval \"db.addUser(\\\"${name}\\\", \\\"${password}\\\")\""
-  $auth = "if [ $? -eq 252 ]; then mongo -u ${admin_username} -p ${admin_password} admin --eval \"db.addUser(\\\"${name}\\\", \\\"${password}\\\")\";fi"
-  $command = "${noauth};${auth}"
-  exec { "${name}_add_user" :
-    command   => $command,
-    path      => "/usr/bin:/usr/sbin:/bin:/sbin",
-    logoutput => true,
-    require   => Exec["${name}_wait_connection"],
+  if $version == '2.4.10' {
+    $noauth = "mongo admin --eval \"db.addUser(\\\"${name}\\\", \\\"${password}\\\")\""
+    $auth = "if [ $? -eq 252 ]; then mongo -u ${admin_username} -p ${admin_password} admin --eval \"db.addUser(\\\"${name}\\\", \\\"${password}\\\")\";fi"
+    $command = "${noauth};${auth}"
+  } else {
+    $noauth = "mongo admin --eval \"db.createUser({user: \\\"${name}\\\",pwd: \\\"${password}\\\",roles:[{role: \\\"userAdminAnyDatabase\\\",db: \\\"admin\\\"}]})\""
+    $command = "${noauth}"
+  }
+  exec { "${name}_create_user" :
+      command   => $command,
+      path      => "/usr/bin:/usr/sbin:/bin:/sbin",
+      logoutput => true,
+      require   => Exec["${name}_wait_connection"],
   }
 }

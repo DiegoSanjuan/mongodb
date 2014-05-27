@@ -35,31 +35,38 @@ class mongodb(
 
   create_resources( 'class', $config_class )
 
-  if $version != 'latest' {
-    case $::operatingsystem {
-      /(Amazon)/: {
-        $mongodb_version = "${version}-1"
+  case $::operatingsystem {
+    /(Amazon|CentOS|Fedora|RedHat)/: {
+      exec { 'install-mongodb' :
+        command   => "yum install -y ${mongodb::params::mongo_10gen}",
+        path      => "/usr/bin:/usr/sbin:/bin:/sbin",
+        logoutput => true,
+        require => Class['mongodb::10gen'],
       }
-      /(CentOS|Fedora|RedHat)/: {
-        $mongodb_version = "${version}-mongodb_1"
+      if $mongodb::params::mongo_10gen_server {
+        exec { 'install-mongodb-server' :
+          command   => "yum install -y ${mongodb::params::mongo_10gen_server}",
+          path      => "/usr/bin:/usr/sbin:/bin:/sbin",
+          logoutput => true,
+          require => Class['mongodb::10gen'],
+        }
       }
-      /(Debian|Ubuntu)/: {
-        $mongodb_version = "${version}"
+    }
+    /(Debian|Ubuntu)/: {
+      exec { 'install-mongodb' :
+        command   => "apt-get install -y ${mongodb::params::mongo_10gen}",
+        path      => "/usr/bin:/usr/sbin:/bin:/sbin",
+        logoutput => true,
+        require => Class['mongodb::10gen'],
       }
-    }  
-  } else {
-    $mongodb_version = latest
-  }
-
-  package { $mongodb::params::mongo_10gen :
-    ensure  => "${mongodb_version}",
-    require => Class['mongodb::10gen'],
-  }
-  
-  if $mongodb::params::mongo_10gen_server {
-    package { $mongodb::params::mongo_10gen_server :
-      ensure  => "${mongodb_version}",
-      require => Class['mongodb::10gen'],
+      if $mongodb::params::mongo_10gen_server {
+        exec { 'install-mongodb-server' :
+          command   => "apt-get install -y ${mongodb::params::mongo_10gen_server}",
+          path      => "/usr/bin:/usr/sbin:/bin:/sbin",
+          logoutput => true,
+          require => Class['mongodb::10gen'],
+        }
+      }
     }
   }
 
@@ -67,6 +74,6 @@ class mongodb(
     ensure     => running,
     name       => $mongodb::params::mongo_service,
     enable     => true,
-    require    => Package[$mongodb::params::mongo_10gen],
+    require    => Exec['install-mongodb'],
   }
 }
